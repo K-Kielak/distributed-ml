@@ -8,6 +8,7 @@ import pandas as pd
 
 def load_preprocessed_data(
     data_path: os.PathLike,
+    leak_label: bool = False,  # For testing to see if model can overfit
 ) -> Tuple[NDArray[np.float64], NDArray[np.float64], float, float]:
     data = pd.read_csv(data_path)
 
@@ -32,7 +33,7 @@ def load_preprocessed_data(
 
     # Split
     outputs = data["median_house_value"]
-    inputs = data.drop("median_house_value", axis=1)
+    inputs = data.drop("median_house_value", axis=1) if not leak_label else data
     return (
         inputs.to_numpy(),
         outputs.to_numpy(),

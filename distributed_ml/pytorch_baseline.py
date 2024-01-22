@@ -9,6 +9,7 @@ import pandas as pd
 
 from distributed_ml.preprocessing import load_preprocessed_data
 
+
 pd.set_option("display.max_columns", None)
 DATA_PATH = "housing.csv"
 
@@ -47,7 +48,7 @@ def train(
     for epoch in range(max_epochs):
         report_outputs = outputs
         report_preds = model(inputs).squeeze()
-        report_mse = ((report_preds - outputs) ** 2).mean()
+        report_mse = ((report_preds - report_outputs) ** 2).mean()
         mae_suffix = ""
         if out_mean is not None and out_std is not None:
             report_preds = report_preds * out_std + out_mean
