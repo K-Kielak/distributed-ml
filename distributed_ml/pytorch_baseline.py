@@ -14,12 +14,15 @@ from distributed_ml.preprocessing import load_preprocessed_data
 pd.set_option("display.max_columns", None)
 DATA_PATH = "housing.csv"
 MODEL_PATH = "model.pt"
-LOAD = False
+LOAD = True
+TRAIN = False
 
 
 def main() -> None:
     inputs, outputs, out_mean, out_std = load_preprocessed_data(DATA_PATH)
     device = get_device()
+    inputs = torch.tensor(inputs, dtype=torch.float32, device=device)
+    outputs = torch.tensor(outputs, dtype=torch.float32, device=device)
     print(f"Inputs shape: {inputs.shape}")
     print(f"Outputs shape: {outputs.shape}")
 
@@ -27,20 +30,25 @@ def main() -> None:
         if not Path(MODEL_PATH).exists():
             raise ValueError(f"Model at path {MODEL_PATH} doesn't exist")
 
+        print(f"Loading model from {MODEL_PATH}")
         model = torch.load(MODEL_PATH)
     else:
         model = HousingNn().to(device)
-    print(model)
 
-    train(model, inputs, outputs, device, out_mean=out_mean, out_std=out_std)
+    if TRAIN:
+        print("Starting training...")
+        train(model, inputs, outputs, device, out_mean=out_mean, out_std=out_std)
+
+    mse, mae = test(model, inputs, outputs, out_mean, out_std)
+    print(f"Final results - MAE: {mae}; MSE: {mse}")
     torch.save(model, MODEL_PATH)
+    print(f"Saved model at {MODEL_PATH}")
 
 
 def train(
     model: tnn.Module,
-    inputs: NDArray[np.float64],
-    outputs: NDArray[np.float64],
-    device: str,
+    inputs: torch.Tensor,
+    outputs: torch.Tensor,
     learning_rate: float = 1e-4,
     batch_size: int = 512,
     max_epochs: int = 100,
@@ -48,8 +56,6 @@ def train(
     out_mean: Optional[float] = None,
     out_std: Optional[float] = None,
 ) -> None:
-    inputs = torch.tensor(inputs, dtype=torch.float32, device=device)
-    outputs = torch.tensor(outputs, dtype=torch.float32, device=device)
     random_ordering = torch.randperm(len(inputs))
     inputs = inputs[random_ordering]
     outputs = outputs[random_ordering]
