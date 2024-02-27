@@ -1,4 +1,5 @@
 from collections import deque
+from pathlib import Path
 from typing import Optional
 
 import torch
@@ -12,6 +13,8 @@ from distributed_ml.preprocessing import load_preprocessed_data
 
 pd.set_option("display.max_columns", None)
 DATA_PATH = "housing.csv"
+MODEL_PATH = "model.pt"
+LOAD = True
 
 
 def main() -> None:
@@ -19,9 +22,18 @@ def main() -> None:
     device = get_device()
     print(f"Inputs shape: {inputs.shape}")
     print(f"Outputs shape: {outputs.shape}")
-    model = HousingNn().to(device)
+
+    if LOAD:
+        if not Path(MODEL_PATH).exists():
+            raise ValueError(f"Model at path {MODEL_PATH} doesn't exist")
+
+        model = torch.load(MODEL_PATH)
+    else:
+        model = HousingNn().to(device)
     print(model)
+
     train(model, inputs, outputs, device, out_mean=out_mean, out_std=out_std)
+    torch.save(model, MODEL_PATH)
 
 
 def train(

@@ -1,3 +1,4 @@
 distributed-ml-venv/
 .idea/
 __pycache__/
+*.pt
