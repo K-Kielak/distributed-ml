@@ -14,7 +14,7 @@ from distributed_ml.preprocessing import load_preprocessed_data
 pd.set_option("display.max_columns", None)
 DATA_PATH = "housing.csv"
 MODEL_PATH = "model.pt"
-LOAD = True
+LOAD = False
 
 
 def main() -> None:
@@ -58,18 +58,10 @@ def train(
     early_stopping_history = deque()  # for early stopping
 
     for epoch in range(max_epochs):
-        report_outputs = outputs
-        report_preds = model(inputs).squeeze()
-        report_mse = ((report_preds - report_outputs) ** 2).mean()
-        mae_suffix = ""
-        if out_mean is not None and out_std is not None:
-            report_preds = report_preds * out_std + out_mean
-            report_outputs = report_outputs * out_std + out_mean
-            mae_suffix = " (post destandarization)"
-
-        report_mae = (torch.abs(report_preds - report_outputs)).mean()
+        report_mse, report_mae = test(model, inputs, outputs, out_mean, out_std)
         print(
-            f"Epoch {epoch + 1} will start. Current MAE{mae_suffix}: {report_mae.item():.3f}, MSE: {report_mse.item():.3f}"
+            f"Epoch {epoch} will start. "
+            f"Current MAE: {report_mae.item():.3f}, MSE: {report_mse.item():.3f}"
         )
 
         for batch in range(0, len(inputs), batch_size):
@@ -93,6 +85,24 @@ def train(
         early_stopping_history.append(report_mae.item())
         if len(early_stopping_history) > early_stopping_history_length:
             early_stopping_history.popleft()
+
+
+def test(
+    model: tnn.Module,
+    inputs: torch.Tensor,
+    outputs: torch.Tensor,
+    out_mean: Optional[float] = None,
+    out_std: Optional[float] = None,
+) -> (torch.Tensor, torch.Tensor, torch.Tensor):
+    preds = model(inputs).squeeze()
+
+    if out_mean is not None and out_std is not None:
+        preds = preds * out_std + out_mean
+        outputs = outputs * out_std + out_mean
+
+    mse = ((preds - outputs) ** 2).mean()
+    mae = (torch.abs(preds - outputs)).mean()
+    return mse, mae
 
 
 class HousingNn(torch.nn.Module):
